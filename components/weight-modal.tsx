@@ -244,13 +244,7 @@ export function WeightModal({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 bg-primary/60 hover:bg-primary text-primary-foreground"
-              >
-                {isLoading ? 'Saving...' : 'Save'}
-              </Button>
+             
             </div>
           </form>
         </div>

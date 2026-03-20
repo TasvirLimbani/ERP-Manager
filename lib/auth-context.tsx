@@ -8,6 +8,7 @@ type User = {
   email: string
   company_id: number
   department: string
+  company_name: string
 }
 
 type AuthContextType = {

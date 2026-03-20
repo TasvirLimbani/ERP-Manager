@@ -45,12 +45,14 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 md:hidden p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-      >
-        {isOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
+    {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed top-4 left-4 z-50 md:hidden p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+        >
+          <Menu size={20} />
+        </button>
+      )}
 
       {/* Overlay */}
       {isOpen && (

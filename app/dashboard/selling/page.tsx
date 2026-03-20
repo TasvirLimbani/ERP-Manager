@@ -26,6 +26,7 @@ export default function PackingPage() {
     const [formData, setFormData] = useState<any>({})
     const [selectedTpm, setSelectedTpm] = useState<string>("")
     const [selectedColor, setSelectedColor] = useState("")
+    const [loading, setLoading] = useState(false)
     const { user } = useAuth()
 
     useEffect(() => {
@@ -33,6 +34,7 @@ export default function PackingPage() {
     }, [])
 
     const loadEntries = async () => {
+        setLoading(true)
         try {
             const res = await fetch(`/api/selling?company_id=${user?.company_id}`)
             const response = await fetch(`/api/packing?company_id=${user?.company_id}&action=total`)  //
@@ -70,6 +72,10 @@ export default function PackingPage() {
         } catch (error) {
             console.error("Error loading entries:", error);
         }
+        finally {
+            setLoading(false)
+        }
+
     };
 
     const handleAddNew = () => {
@@ -166,11 +172,12 @@ export default function PackingPage() {
             </div>
 
             <DataTable
-                title="Packing Entries"
+                title="Selling Entries"
                 columns={columns}
                 data={entries}
                 onAddNew={handleAddNew}
-                emptyState="No packing entries yet. Click 'Add New' to create one."
+                isLoading={loading}
+                emptyState="No selling entries yet. Click 'Add New' to create one."
             />
 
             <FormModal
@@ -227,9 +234,9 @@ export default function PackingPage() {
                             { value: '3000', label: '3000' }
                         ]
                     },
-                   
+
                     { name: 'box', label: 'Box', type: 'number', placeholder: 'e.g., Box-01', required: true },
-                     { name: 'cones', label: 'Extra Cones', type: 'number', placeholder: '0', required: true },
+                    { name: 'cones', label: 'Extra Cones', type: 'number', placeholder: '0', required: true },
                 ]}
                 initialData={formData}
                 onSubmit={handleSubmit}

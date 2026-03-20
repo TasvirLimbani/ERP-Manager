@@ -27,6 +27,7 @@ export default function DyeingPage() {
   const [selectedYarn, setSelectedYarn] = useState<string>("")
   const [selectedTpm, setSelectedTpm] = useState<string>("")
   const [selectedYarnWeight, setSelectedYarnWeight] = useState<string>("")
+  const [selectedMachine, setSelectedMachine] = useState<string>("")
   const { user } = useAuth()
   const [isYarnModalOpen, setIsYarnModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -37,11 +38,16 @@ export default function DyeingPage() {
   })
 
 
-
+  type Machine = {
+    id: string
+    machine_number: string
+  }
+  const [machines, setMachines] = useState<Machine[]>([])
 
   useEffect(() => {
     if (user?.company_id) {
       loadEntries()
+      loadMachines()
     }
   }, [user])
 
@@ -124,6 +130,33 @@ export default function DyeingPage() {
   }
 
 
+
+  const loadMachines = async () => {
+    if (!user?.company_id) return
+
+    try {
+      const res = await fetch(
+        `/api/machines?company_id=${user.company_id}&machine_type=Dyeing Machine`
+      )
+
+      const json = await res.json()
+
+      if (json.status) {
+        const formatted = json.data.map((item: any) => ({
+          // id: String(item.id),
+          machine_number: String(item.machine_number),
+        }))
+
+        setMachines(formatted)
+      } else {
+        toast.error(json.message || "Failed to load machines")
+      }
+    } catch (err: any) {
+      toast.error(err.message)
+    }
+  }
+
+
   const handleYarn = () => {
     setYarnForm({
       yarn_type: '',
@@ -137,6 +170,14 @@ export default function DyeingPage() {
   }
   const handleEdit = (entry: DyeingEntry) => {
     setEditingEntry(entry)
+
+    // ✅ set all selected states from entry
+    setSelectedYarn(entry.yarn_type || "")
+    setSelectedTpm(String(entry.tpm) || "")
+    setSelectedMachine(entry.machine_id || "")
+
+    console.log("Editing Entry::::::::::::::: :", entry.machine_id) // check in console
+
     setIsModalOpen(true)
   }
   const handleDelete = async (entry: DyeingEntry) => {
@@ -160,48 +201,160 @@ export default function DyeingPage() {
 
 
 
+  // const handleSubmit = async (data: Record<string, any>) => {
+  //   console.log("Form Data Submitted ::::::::::::::::: ", data) // Debug log to check form data
+  //   try {
+  //     const formData: DyeingEntry = {
+  //       id: editingEntry ? editingEntry.id : "",
+  //       yarn_type: selectedYarn || data.yarn_type || "",
+  //       tpm: Number(selectedTpm) || Number(data.tpm) || 0,
+  //       output_weight: Number(data.output_weight) || 0,
+  //       created_at: editingEntry
+  //         ? editingEntry.created_at
+  //         : new Date().toISOString().split("T")[0],
+  //       color: data.color || '',
+  //       weight: Number(data.weight) || 0,
+  //       machine_id: selectedMachine || data.machine_id || '',
+  //       company_id: String(user?.company_id || ''),
+  //       admin_id: String(user?.id || ''),
+  //       status: editingEntry?.status || "running",
+
+  //     }
+
+  //     const res = await fetch("/api/dyeing", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(formData),
+  //     })
+
+  //     const json = await res.json()
+
+  //     if (json.status) {
+  //       toast.success(`Entry ${editingEntry ? "updated" : "added"} successfully`)
+  //       setIsModalOpen(false)
+  //       loadEntries()
+  //       setEditingEntry(null)
+  //     } else {
+  //       toast.error(json.message || "Failed to save entry")
+  //     }
+
+  //   } catch (error: any) {
+  //     toast.error(error.message || "Failed to save entry")
+  //   }
+  // }
+
+
   const handleSubmit = async (data: Record<string, any>) => {
-    try {
-      const formData: DyeingEntry = {
-        id: editingEntry ? editingEntry.id : "",
-        tpm: data.tpm ||selectedTpm|| "0",
-        yarn_type: data.yarn_type || selectedYarn || "",
-        output_weight: data.output_weight || "0",
-        created_at: editingEntry
-          ? editingEntry.created_at
-          : new Date().toISOString().split("T")[0],
-        color: data.color || '',
-        weight: data.weight || '0',
-        machine_id: data.machine_id || '',
-        company_id: String(user?.company_id || ''),
-        admin_id: String(user?.id || ''),
-        status: editingEntry?.status || "running",
-
-      }
-
-      const res = await fetch("/api/dyeing", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      })
-
-      const json = await res.json()
-
-      if (json.status) {
-        toast.success(`Entry ${editingEntry ? "updated" : "added"} successfully`)
-        setIsModalOpen(false)
-        loadEntries()
-        setEditingEntry(null)
-      } else {
-        toast.error(json.message || "Failed to save entry")
-      }
-
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save entry")
+  try {
+    const formData: DyeingEntry = {
+      id: editingEntry?.id || "",
+      yarn_type: selectedYarn || data.yarn_type,
+      tpm: Number(selectedTpm || data.tpm),
+      output_weight: Number(data.output_weight),
+      created_at: editingEntry?.created_at || new Date().toISOString().split("T")[0],
+      color: data.color,
+      weight: Number(data.weight),
+      machine_id: selectedMachine || data.machine_id,
+      company_id: String(user?.company_id || ''),
+      admin_id: String(user?.id || ''),
+      status: data.status || editingEntry?.status || "running",
     }
+
+    console.log("FINAL API DATA:", formData) // 🔍 DEBUG
+
+    const res = await fetch("/api/dyeing", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+
+    const json = await res.json()
+
+    if (json.status) {
+      toast.success(`Entry ${editingEntry ? "updated" : "added"} successfully`)
+      setIsModalOpen(false)
+      loadEntries()
+      setEditingEntry(null)
+
+      // ✅ reset states
+      setSelectedYarn("")
+      setSelectedTpm("")
+      setSelectedMachine("")
+    } else {
+      toast.error(json.message || "Failed to save entry")
+    }
+
+  } catch (error: any) {
+    toast.error(error.message || "Failed to save entry")
   }
+}
+
+  // const handleSubmit = async (data: Record<string, any>) => {
+
+  //   console.log("Yarn Type ::::::::::::::::: ", selectedYarn) // Debug log to check form data
+  //   console.log("TPM Type ::::::::::::::::: ", selectedTpm) // Debug log to check form data
+  //   try {
+  //     const isEdit = !!editingEntry?.id
+
+  //     const formData: DyeingEntry = {
+  //       id: editingEntry ? editingEntry.id : "",
+  //       tpm: data.tpm || selectedTpm || "0",
+  //       yarn_type: editingEntry?.yarn_type || data.yarn_type || selectedYarn || "",
+  //       output_weight: data.output_weight || "0",
+  //       created_at: editingEntry
+  //         ? editingEntry.created_at
+  //         : new Date().toISOString().split("T")[0],
+  //       color: data.color || '',
+  //       weight: data.weight || '0',
+  //       machine_id: data.machine_id || '',
+  //       company_id: String(user?.company_id || ''),
+  //       admin_id: String(user?.id || ''),
+  //       status: data.status || "running",
+  //     }
+  //     // ✅ ONLY status changed → call changestatus API
+  //     if (isEdit && editingEntry?.status !== data.status) {
+  //       const res = await fetch("/api/dyeing", {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify({
+  //           action: "change_status",
+  //           id: editingEntry.id,
+  //           status: data.status,
+  //         }),
+  //       })
+  //     } else {
+  //       // ✅ normal add/update
+  //      const res = await fetch("/api/dyeing", {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify(formData),
+  //       })
+  //     }
+
+  //     const json = await res.json()
+
+  //     if (json.status) {
+  //       toast.success(`Entry ${isEdit ? "updated" : "added"} successfully`)
+  //       setIsModalOpen(false)
+  //       loadEntries()
+  //       setEditingEntry(null)
+  //     } else {
+  //       toast.error(json.message || "Failed to save entry")
+  //     }
+
+  //   } catch (error: any) {
+  //     toast.error(error.message || "Failed to save entry")
+  //   }
+  // }
+
   const handleYarnChange = (value: string) => {
     setSelectedYarn(value)
     setYarnForm((prev) => ({
@@ -210,6 +363,9 @@ export default function DyeingPage() {
     }))
     setSelectedTpm("")
     setSelectedYarnWeight("")
+  }
+  const handleMachineChange = (value: string) => {
+    setSelectedMachine(value)
   }
   const handleTpmChange = (value: string) => {
     setSelectedTpm(value)
@@ -233,14 +389,37 @@ export default function DyeingPage() {
       setSelectedYarnWeight("")
     }
   }
+
+
+
   const columns = [
     { key: 'created_at', label: 'Date' },
-    { key: 'machine_id', label: 'Machine ID' },
+    // { key: 'machine_id', label: 'Machine ID' },
     { key: 'tpm', label: 'TMP' },
     { key: 'yarn_type', label: 'Yarn Type' },
     { key: 'weight', label: 'Weight (kg)' },
     { key: 'output_weight', label: 'Output Weight (kg)' },
     { key: 'color', label: 'Dye Color' },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (value: string) => {
+        const statusColors: Record<string, string> = {
+          pending: 'bg-blue-500',
+          running: 'bg-yellow-500',
+          completed: 'bg-green-700',
+          cancelled: 'bg-red-500',
+        }
+
+        return (
+          <div className="flex justify-center">
+            <span
+              className={`h-3 w-3 bg-blue-500 rounded ${statusColors[value] || 'bg-gray-400'}`}
+            ></span>
+          </div>
+        )
+      },
+    }
 
   ]
 
@@ -248,8 +427,26 @@ export default function DyeingPage() {
     <div className="p-6 md:p-8 max-w-7xl mx-auto">
       <div className='row flex justify-between items-center'>
         <div className="mb-8">
+
           <h1 className="text-3xl font-bold text-foreground mb-2">Dyeing Management</h1>
           <p className="text-muted-foreground">Manage dyeing batches and colors</p>
+
+          <div className='row flex items-center mt-4 text-sm text-foreground'>
+            <div className="h-3 w-3 bg-blue-500 rounded">
+            </div>
+            <span className="ml-2">Pending</span>
+            <div className="ml-2 h-3 w-3 bg-yellow-500 rounded">
+            </div>
+            <span className="ml-2">Running</span>
+
+            <div className="ml-2 h-3 w-3 bg-green-700 rounded">
+            </div>
+            <span className="ml-2">Completed</span>
+            <div className="ml-2 h-3 w-3 bg-red-500 rounded">
+            </div>
+            <span className="ml-2">Cancelled</span>
+          </div>
+
         </div>
 
         <Button
@@ -257,7 +454,7 @@ export default function DyeingPage() {
           className="bg-primary/80 hover:bg-primary/60 text-primary-foreground gap-2"
         >
           <Weight size={16} />
-          Add New
+          Status check
         </Button>
       </div>
       <DataTable
@@ -268,6 +465,7 @@ export default function DyeingPage() {
         onAddNew={handleAddNew}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        isLoading={loading}
         emptyState="No dyeing entries yet. Click 'Add New' to create one."
       />
 
@@ -323,11 +521,24 @@ export default function DyeingPage() {
 
         fields={[
 
-          { name: 'machine_id', label: 'Machine ID', type: 'text', placeholder: 'e.g., M-01', required: true },
+          {
+            name: 'machine_id',
+            label: 'Machine ID',
+            type: 'select',
+            placeholder: 'Select Machine',
+            value: selectedMachine || editingEntry?.machine_id,
+                        required: true,
+            onChange: handleMachineChange,
+            options: machines.map((m) => ({
+              value: m.id,
+              label: `${m.machine_number}`,
+            })),
+          },
+
           {
             name: 'yarn_type',
             label: 'Type',
-            value: selectedYarn || editingEntry?.yarn_type || "",
+            value: selectedYarn || editingEntry?.yarn_type,
             type: 'select',
             placeholder: 'Select yarn type',
             onChange: handleYarnChange,
@@ -340,7 +551,7 @@ export default function DyeingPage() {
             name: 'tpm',
             label: 'TPM',
             type: 'select',
-            value: selectedTpm || editingEntry?.tpm || "",
+            value: selectedTpm || editingEntry?.tpm,
             placeholder: 'Select TPM',
             onChange: handleTpmChange,
             options: totalEntries
@@ -368,6 +579,14 @@ export default function DyeingPage() {
           { name: 'weight', label: 'Weight (kg)', type: 'number', placeholder: '0.00', required: true },
           { name: 'color', label: 'Dye Color', type: 'text', placeholder: 'e.g., Deep Blue', required: true },
           { name: 'output_weight', label: 'Output Weight (kg)', type: 'number', placeholder: '0.00', required: true },
+          {
+            name: 'status', label: 'Status', type: 'select', placeholder: 'Select status', required: true, options: [
+              { value: 'running', label: 'Running' },
+              { value: 'pending', label: 'Pending' },
+              { value: 'completed', label: 'Completed' },
+              { value: 'cancelled', label: 'Cancelled' },
+            ]
+          },
 
         ]}
         initialData={editingEntry || undefined}

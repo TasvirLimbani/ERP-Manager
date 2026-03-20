@@ -40,9 +40,17 @@ export default function ConningPage() {
   })
 
 
+  type Machine = {
+    id: string
+    machine_number: string
+  }
+  const [machines, setMachines] = useState<Machine[]>([])
+
+
   useEffect(() => {
     if (user?.company_id) {
       loadEntries()
+      loadMachines()
     }
   }, [user])
 
@@ -95,6 +103,33 @@ export default function ConningPage() {
       toast.error(error.message || "Failed to load coning entries")
     } finally {
       setLoading(false)
+    }
+  }
+
+
+
+  const loadMachines = async () => {
+    if (!user?.company_id) return
+
+    try {
+      const res = await fetch(
+        `/api/machines?company_id=${user.company_id}&machine_type=Automatic Cone`
+      )
+
+      const json = await res.json()
+
+      if (json.status) {
+        const formatted = json.data.map((item: any) => ({
+          id: String(item.id),
+          machine_number: String(item.machine_number),
+        }))
+
+        setMachines(formatted)
+      } else {
+        toast.error(json.message || "Failed to load machines")
+      }
+    } catch (err: any) {
+      toast.error(err.message)
     }
   }
 
@@ -169,12 +204,12 @@ export default function ConningPage() {
         id: editingEntry ? editingEntry.id : "",
         machine_id: data.machine_id || '',
         company_id: String(user?.company_id || ''),
-        tpm: data.tpm || " ",
-        yarn_type: data.yarn_type || "",
-        color: data.color || '',
-        weight: data.weight || '0',
+       tpm: Number(selectedTpm || data.tpm),
+        yarn_type: data.yarn_type || selectedYarn || "",
+        color: selectedColor || data.color || '', // ✅ FIXED
+        weight: Number(data.weight) || 0,
         cones_size: data.cones_size || '', // Placeholder, replace with actual cone size if needed
-        cones: data.cones || '', // Placeholder, replace with actual cone count if needed
+        cones: Number(data.cones) || 0, // Placeholder, replace with actual cone count if needed
         date: data.date || new Date().toISOString().split('T')[0],
       }
 
@@ -258,7 +293,20 @@ export default function ConningPage() {
   }
   const columns = [
     { key: 'created_at', label: 'Date' },
-    { key: 'machine_id', label: 'Machine ID' },
+  {
+  key: 'machine_id',
+  label: 'Machine ID',
+  render: (value: string) => {
+    const machine = machines.find((m) => m.id === value)
+
+    if (!machine) return value
+
+    // ✅ extract only number
+    const number = machine.machine_number.replace(/\D/g, '')
+
+    return number || machine.machine_number
+  },
+},
     { key: 'tpm', label: 'TPM' },
     { key: 'yarn_type', label: 'Yarn Type' },
     { key: 'color', label: 'Color' },
@@ -285,7 +333,7 @@ export default function ConningPage() {
           className="bg-primary/80 hover:bg-primary/60 text-primary-foreground gap-2"
         >
           <Weight size={16} />
-          Add New
+          Status check
         </Button>
       </div>
       <DataTable
@@ -295,6 +343,7 @@ export default function ConningPage() {
         onAddNew={handleAddNew}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        isLoading={loading}
         emptyState="No conning entries yet. Click 'Add New' to create one."
       />
 
@@ -379,11 +428,22 @@ export default function ConningPage() {
         fields={[
 
 
-          { name: 'machine_id', label: 'Machine ID', type: 'text', placeholder: 'Enter machine ID', required: true },
+          {
+            name: 'machine_id',
+            label: 'Machine ID',
+            type: 'select',
+            placeholder: 'Select Machine',
+            required: true,
+            options: machines.map((m) => ({
+              value: m.id,
+              label: `${m.machine_number}`,
+            })),
+          },
+
           {
             name: 'yarn_type',
             label: 'Type',
-            value: selectedYarn || editingEntry?.yarn_type || "",
+            value: selectedYarn,
             type: 'select',
             placeholder: 'Select yarn type',
             onChange: handleYarnChange,
@@ -418,7 +478,7 @@ export default function ConningPage() {
             name: 'color',
             label: 'Color',
             type: 'select',
-            value: selectedColor || editingEntry?.color || "",
+            value: selectedColor,
             placeholder: 'Select Color',
             onChange: handleColorChange,
             options: [

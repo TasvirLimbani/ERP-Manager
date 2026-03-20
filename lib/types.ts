@@ -42,9 +42,9 @@ export interface DyeingEntry  {
   admin_id: string
   color: string
   created_at: string
-  tpm: string
-  weight: string
-  output_weight: string
+  tpm: any
+  weight: any
+  output_weight: any
   status: string
 }
 
@@ -52,12 +52,12 @@ export interface ConningEntry {
   id: string
   company_id: string
   machine_id: string
-  tpm: string
+  tpm: any
   yarn_type: string
   color: string
   date: string
-  weight: string
-  cones: string
+  weight: any
+  cones: any
   cones_size: string
  
 }
@@ -66,13 +66,13 @@ export interface PackingEntry {
   id: string
   created_at: string
   yarn_type: string
-  tpm: string
+  tpm: any
   cones: string
-  color: string
+  color: any
   cone_size: string
-  box: string
+  box: any
   company_id: string
-  extra_pis: string
+  extra_pis: any
   machine_id: string
 }
 

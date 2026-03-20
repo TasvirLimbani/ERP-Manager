@@ -52,15 +52,49 @@ export function DataTable({
           </Button>
         )}
       </div>
-
-
-
-
+      
       {isLoading ? (
-        <div className="p-12 text-center">
-          <p className="text-muted-foreground animate-pulse">Loading...</p>
-        </div>
-      ) :
+  <div className="overflow-x-auto">
+    <table className="w-full">
+      <thead>
+        <tr className="border-b border-border/50 bg-background/50">
+          {columns.map((col) => (
+            <th
+              key={col.key}
+              className="px-6 py-3 text-center text-sm font-semibold"
+            >
+              <div className="h-4 w-20 mx-auto bg-gray-300 rounded animate-pulse"></div>
+            </th>
+          ))}
+          {(onEdit || onDelete) && (
+            <th className="px-6 py-3">
+              <div className="h-4 w-20 mx-auto bg-gray-300 rounded animate-pulse"></div>
+            </th>
+          )}
+        </tr>
+      </thead>
+
+      <tbody>
+        {[...Array(6)].map((_, row) => (
+          <tr key={row} className="border-b border-border/50">
+            {columns.map((_, colIndex) => (
+              <td key={colIndex} className="px-6 py-4">
+                <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
+              </td>
+            ))}
+
+            {(onEdit || onDelete) && (
+              <td className="px-6 py-4 flex justify-center gap-2">
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+               
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+) :
         displayData.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-muted-foreground">{emptyState}</p>
@@ -92,19 +126,19 @@ export function DataTable({
                       key={item.id || idx}
                       className="border-b border-border/50 hover:bg-background/30 transition-colors duration-150"
                     >
-                    {columns.map((col) => {
-  const color = col.key === "color" ? item.color : null;
+                      {columns.map((col) => {
+                        const color = col.key === "color" ? item.color : null;
 
-  return (
-    <td
-      key={col.key}
-      className={`px-6 py-4 text-sm text-center ${color ? "font-bold" : "text-foreground"}`}
-      style={color ? { color } : {}}
-    >
-      {col.render ? col.render(item[col.key], item) : item[col.key]}
-    </td>
-  );
-})}
+                        return (
+                          <td
+                            key={col.key}
+                            className={`px-6 py-4 text-sm text-center ${color ? "font-bold" : "text-foreground"}`}
+                            style={color ? { color } : {}}
+                          >
+                            {col.render ? col.render(item[col.key], item) : item[col.key]}
+                          </td>
+                        );
+                      })}
                       {(onEdit || onDelete) && (
                         <td className="px-6 py-4 text-sm space-x-2 flex gap-2 justify-center">
                           {onEdit && (

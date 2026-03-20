@@ -26,16 +26,18 @@ export default function YarnPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState<YarnEntry | null>(null)
   const { user } = useAuth()
+   const [loading, setLoading] = useState(false)
   const [isYarnModalOpen, setIsYarnModalOpen] = useState(false)
-const [yarnForm, setYarnForm] = useState({
-  yarn_type: '',
-  total_weight: ''
-})
+  const [yarnForm, setYarnForm] = useState({
+    yarn_type: '',
+    total_weight: ''
+  })
   useEffect(() => {
     loadEntries()
   }, [])
 
   const loadEntries = async () => {
+      setLoading(true)
     try {
       const res = await fetch(`/api/yarn?company_id=${user?.company_id}`)
       const response = await fetch(`/api/yarn?company_id=${user?.company_id}&action=total`)
@@ -73,6 +75,9 @@ const [yarnForm, setYarnForm] = useState({
     } catch (error) {
       toast.error('Failed to load yarn list')
     }
+    finally {
+    setLoading(false) // ✅ stop loading ALWAYS
+  }
   }
 
   const handleAddNew = () => {
@@ -122,13 +127,13 @@ const [yarnForm, setYarnForm] = useState({
     setIsYarnModalOpen(true)
   }
   const handleYarnChange = (value: string) => {
-  const yarn = totalEntries.find((y) => y.yarn_type === value)
+    const yarn = totalEntries.find((y) => y.yarn_type === value)
 
-  setYarnForm({
-    yarn_type: value,
-    total_weight: yarn ? String(yarn.total_weight) : ''
-  })
-}
+    setYarnForm({
+      yarn_type: value,
+      total_weight: yarn ? String(yarn.total_weight) : ''
+    })
+  }
   const generateBatchId = () => {
     const now = new Date();
     const microPart = now.getTime().toString().slice(-5); // last 5 digits of timestamp in ms
@@ -180,7 +185,39 @@ const [yarnForm, setYarnForm] = useState({
       render: (value: number) => value.toFixed(2),
     },
   ]
+const TableShimmer = () => {
+  return (
+    <div className="border rounded-lg p-4 space-y-4 animate-pulse bg-background">
+      
+      {/* Top Bar (Title + Add Button) */}
+      <div className="flex justify-between items-center">
+        <div className="h-6 w-48 bg-gray-300 rounded"></div>
+        <div className="h-9 w-32 bg-gray-300 rounded"></div>
+      </div>
 
+      {/* Table Header */}
+      <div className="grid grid-cols-5 gap-4 border-t pt-4">
+        <div className="h-8 w-20 bg-gray-300 rounded"></div>
+        <div className="h-8 w-20 bg-gray-300 rounded"></div>
+        <div className="h-8 w-32 bg-gray-300 rounded"></div>
+        <div className="h-8 w-20 bg-gray-300 rounded"></div>
+        <div className="h-8 w-24 bg-gray-300 rounded"></div>
+      </div>
+
+      {/* Rows */}
+      {[...Array(6)].map((_, row) => (
+        <div key={row} className="grid grid-cols-5 gap-4 items-center mt-15">
+          <div className="h-7 w-24 bg-gray-200 rounded"></div>
+          <div className="h-7 w-24 bg-gray-200 rounded"></div>
+          <div className="h-7 w-32 bg-gray-200 rounded"></div>
+          <div className="h-7 w-20 bg-gray-200 rounded"></div>
+          <div className="h-7 w-20 bg-gray-200 rounded"></div>
+        </div>
+      ))}
+    </div>
+  )
+}
+  
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto">
       <div className='row flex justify-between items-center'>
@@ -194,11 +231,13 @@ const [yarnForm, setYarnForm] = useState({
           className="bg-primary/80 hover:bg-primary/60 text-primary-foreground gap-2"
         >
           <Weight size={16} />
-          Add New
+          Status check
         </Button>
 
       </div>
-
+{loading ? (
+  <TableShimmer />
+) : (
       <DataTable
         title="Yarn Entries"
         columns={columns}
@@ -206,8 +245,10 @@ const [yarnForm, setYarnForm] = useState({
         onAddNew={handleAddNew}
         onEdit={handleEdit}
         onDelete={handleDelete}
+         isLoading={loading}
         emptyState="No yarn entries yet. Click 'Add New' to create one."
       />
+      )}
       <WeightModal
         isOpen={isYarnModalOpen}
         title={'Yarn Weight'}

@@ -44,17 +44,26 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // if id exists → update
-    const apiUrl = body.id
-      ? "http://dyeing.undo.it/api/dyeing/update.php"
-      : "http://dyeing.undo.it/api/dyeing/add.php";
+    let apiUrl = "";
+
+    if (body.action === "change_status") {
+      apiUrl = "http://dyeing.undo.it/api/dyeing/changestatus.php";
+    } else if (body.id) {
+      apiUrl = "http://dyeing.undo.it/api/dyeing/update.php";
+    } else {
+      apiUrl = "http://dyeing.undo.it/api/dyeing/add.php";
+    }
+
+    // ✅ FIX: send as form-data
+    const formData = new URLSearchParams()
+
+    Object.keys(body).forEach((key) => {
+      formData.append(key, body[key])
+    })
 
     const response = await fetch(apiUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
+      body: formData,
     });
 
     const data = await response.json();
@@ -68,7 +77,6 @@ export async function POST(req: Request) {
     );
   }
 }
-
 
 
 export async function DELETE(req: NextRequest) {

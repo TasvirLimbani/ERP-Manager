@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useAuth } from '@/lib/auth-context'
 
 
 export interface YarnStock {
@@ -64,9 +65,14 @@ export default function DashboardPage() {
   const [CHART_DATA, setChartData] = useState<{ name: string; production: number; target: number }[]>([])
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
+
+  const safeNumber = (value: string | number | null | undefined) => {
+    return Math.floor(Number(value ?? 0))
+  }
   useEffect(() => {
     setLoading(true)
-    fetch('/api/dashboard')
+    fetch(`/api/dashboard?company_id=${user?.company_id}`)
       .then(res => res.json())
       .then(data => {
         if (data.status) {
@@ -154,8 +160,9 @@ export default function DashboardPage() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Total Yarn</p>
-              <p className="text-3xl font-bold text-foreground">{dashboardData?.total_yarn_stock.total_yarn_stock.split('.')[0]}</p>
-              <p className="text-xs text-muted-foreground mt-2">kg in stock</p>
+              <p className="text-3xl font-bold text-foreground">
+                {safeNumber(dashboardData?.total_yarn_stock?.total_yarn_stock)}
+              </p>              <p className="text-xs text-muted-foreground mt-2">kg in stock</p>
             </div>
             <div className="p-3 bg-primary/10 rounded-lg">
               <Package className="w-6 h-6 text-primary" />
@@ -181,8 +188,11 @@ export default function DashboardPage() {
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Low Stock Alert</p>
               <p className="text-3xl font-bold text-foreground">
-                {dashboardData?.low_stock_alert.length === 0 ? "0" : dashboardData?.low_stock_alert[0].yarn_type}
-              </p>              <p className="text-xs text-muted-foreground mt-2">Yarn Types</p>
+                <p className="text-3xl font-bold text-foreground">
+                  {(dashboardData?.low_stock_alert?.length ?? 0) === 0
+                    ? "0"
+                    : dashboardData?.low_stock_alert?.[0]?.yarn_type ?? "0"}
+                </p>              </p>              <p className="text-xs text-muted-foreground mt-2">Yarn Types</p>
             </div>
             <div className="p-3 bg-primary/10 rounded-lg">
               <Zap className="w-6 h-6 text-primary" />
@@ -194,8 +204,11 @@ export default function DashboardPage() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Total Weight Loss</p>
-              <p className="text-3xl font-bold text-foreground">{dashboardData?.weight_loss.total_weight_loss.split('.')[0]}</p>
-              <p className="text-xs text-muted-foreground mt-2">kg this month</p>
+              <p className="text-3xl font-bold text-foreground">
+
+
+                {safeNumber(dashboardData?.weight_loss?.total_weight_loss)}
+              </p>              <p className="text-xs text-muted-foreground mt-2">kg this month</p>
             </div>
             <div className="p-3 bg-accent/10 rounded-lg">
               <CheckCircle className="w-6 h-6 text-accent" />
@@ -248,8 +261,8 @@ export default function DashboardPage() {
             </TableHeader>
 
             <TableBody>
-              {dashboardData?.yarn_types?.length ? (
-                dashboardData.yarn_types.map((yarn, index) => (
+              {(dashboardData?.yarn_types?.length ?? 0) > 0 ? (
+                dashboardData!.yarn_types!.map((yarn, index) => (
                   <TableRow key={index}>
                     <TableCell>{yarn.yarn_type}</TableCell>
                     <TableCell>{Number(yarn.stock).toFixed(0)} kg</TableCell>
@@ -258,7 +271,7 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center text-muted-foreground">
                     No Yarn Data
                   </TableCell>
                 </TableRow>

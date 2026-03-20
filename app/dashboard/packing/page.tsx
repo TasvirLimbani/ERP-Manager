@@ -27,6 +27,7 @@ export default function PackingPage() {
   const [selectedYarn, setSelectedYarn] = useState<string>("")
   const [selectedTpm, setSelectedTpm] = useState<string>("")
   const [selectedColor, setSelectedColor] = useState("")
+  const [loading, setLoading] = useState(false)
   const { user } = useAuth()
   const [selectedYarnWeight, setSelectedYarnWeight] = useState<string>("")
   const [isYarnModalOpen, setIsYarnModalOpen] = useState(false)
@@ -37,11 +38,20 @@ export default function PackingPage() {
     total_cones: ''
   })
 
+
+  type Machine = {
+    id: string
+    machine_number: string
+  }
+  const [machines, setMachines] = useState<Machine[]>([])
+
   useEffect(() => {
     loadEntries()
+    loadMachines()
   }, [])
 
   const loadEntries = async () => {
+    setLoading(true)
     try {
       const res = await fetch(`/api/packing?company_id=${user?.company_id}`)
       const response = await fetch(`/api/conning?company_id=${user?.company_id}&action=total`)  //
@@ -80,6 +90,9 @@ export default function PackingPage() {
     } catch (error) {
       console.error("Error loading entries:", error);
     }
+    finally {
+      setLoading(false)
+    }
   };
 
   const handleAddNew = () => {
@@ -104,6 +117,33 @@ export default function PackingPage() {
     setIsModalOpen(true);
   };
 
+
+  const loadMachines = async () => {
+    if (!user?.company_id) return
+
+    try {
+      const res = await fetch(
+        `/api/machines?company_id=${user.company_id}&machine_type=Packaging Machine`
+      )
+
+      const json = await res.json()
+
+      if (json.status) {
+        const formatted = json.data.map((item: any) => ({
+          id: String(item.id),
+          machine_number: String(item.machine_number),
+        }))
+
+        setMachines(formatted)
+      } else {
+        toast.error(json.message || "Failed to load machines")
+      }
+    } catch (err: any) {
+      toast.error(err.message)
+    }
+  }
+
+
   const handleYarn = () => {
     setYarnForm({
       yarn_type: '',
@@ -120,6 +160,9 @@ export default function PackingPage() {
 
   const handleEdit = (entry: PackingEntry) => {
     setEditingEntry(entry)
+    setSelectedYarn(entry.yarn_type || "")
+    setSelectedTpm(String(entry.tpm || ""))
+    setSelectedColor(entry.color || "")
     setIsModalOpen(true)
   }
 
@@ -151,13 +194,13 @@ export default function PackingPage() {
       const payload = {
         company_id: Number(user?.company_id),
         machine_id: Number(data.machine_id),
-        yarn_type: data.yarn_type,
-        tpm: Number(data.tpm),
-        color: data.color,
-        cones: Number(data.cones),
+        tpm: Number(selectedTpm || data.tpm),
+        yarn_type: data.yarn_type || selectedYarn || "",
+        color: selectedColor || data.color || '', // ✅ FIXED
+        cones: Number(data.cones) || 0,
         cone_size: Number(data.cone_size),
-        box: Number(data.box),
-        extra_pis: Number(data.extra_pis || 0),
+        box: Number(data.box) || 0,
+        extra_pis: Number(data.extra_pis) || 0,
       }
       const res = await fetch("/api/packing", {
         method: "POST", // ✅ always POST
@@ -216,7 +259,7 @@ export default function PackingPage() {
     }
   }
 
-const handleColorChange = (value: string) => {
+  const handleColorChange = (value: string) => {
     setSelectedColor(value)
     setYarnForm((prev) => ({
       ...prev,
@@ -246,13 +289,11 @@ const handleColorChange = (value: string) => {
 
   const columns = [
     { key: 'created_at', label: 'Date' },
-    { key: 'machine_id', label: 'Machine ID' },
-
     { key: 'yarn_type', label: 'Yarn Type' },
     { key: 'tpm', label: 'TPM' },
     { key: 'color', label: 'Color' },
-
     { key: 'cone_size', label: 'Cone Size' },
+    { key: 'cones', label: 'Cones' },
     { key: 'box', label: 'Box' },
     { key: 'extra_pis', label: 'Extra Pise' },
   ]
@@ -270,7 +311,7 @@ const handleColorChange = (value: string) => {
           className="bg-primary/80 hover:bg-primary/60 text-primary-foreground gap-2"
         >
           <Weight size={16} />
-          Add New
+          status check
         </Button>
       </div>
 
@@ -281,87 +322,100 @@ const handleColorChange = (value: string) => {
         onAddNew={handleAddNew}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        isLoading={loading}
         emptyState="No packing entries yet. Click 'Add New' to create one."
       />
 
 
       <WeightModal
-              isOpen={isYarnModalOpen}
-              title={'Yarn Weight'}
-              fields={[
-                {
-                  name: 'yarn_type',
-                  label: 'Type',
-                  // value: yarnForm.yarn_type,
-                  type: 'select',
-                  placeholder: 'Select yarn type',
-                  onChange: handleYarnChange,
-                  options: [...new Set(totalEntries.map(item => item.yarn_type))].map(yarn => ({
-                    value: yarn,
-                    label: yarn
-                  }))
-                },
-                {
-                  name: 'tpm',
-                  label: 'TPM',
-                  type: 'select',
-                  placeholder: 'Select TPM',
-                  onChange: handleTpmChange,
-                  options: [...new Set(
-                    totalEntries
-                      .filter(e => yarnForm.yarn_type)
-                      .map(e => e.tpm)
-                  )].map(tpm => ({
-                    value: tpm,
-                    label: tpm
-                  }))
-                },
-      
-                {
-                  name: 'color',
-                  label: 'Color',
-                  type: 'select',
-                  placeholder: 'Select Color',
-                  onChange: handleColorChange,
-                  options: [
-                    ...new Set(
-                      totalEntries
-                        .filter(e => {
-                          const yarn = (yarnForm.yarn_type).trim()
-                          const tpm = String(yarnForm.tpm).trim()
-      
-                          return (
-                            e.yarn_type?.trim() === yarn &&
-                            String(e.tpm).trim() === tpm
-                          )
-                        })
-                        .map(e => e.color)
+        isOpen={isYarnModalOpen}
+        title={'Yarn Weight'}
+        fields={[
+          {
+            name: 'yarn_type',
+            label: 'Type',
+            // value: yarnForm.yarn_type,
+            type: 'select',
+            placeholder: 'Select yarn type',
+            onChange: handleYarnChange,
+            options: [...new Set(totalEntries.map(item => item.yarn_type))].map(yarn => ({
+              value: yarn,
+              label: yarn
+            }))
+          },
+          {
+            name: 'tpm',
+            label: 'TPM',
+            type: 'select',
+            placeholder: 'Select TPM',
+            onChange: handleTpmChange,
+            options: [...new Set(
+              totalEntries
+                .filter(e => yarnForm.yarn_type)
+                .map(e => e.tpm)
+            )].map(tpm => ({
+              value: tpm,
+              label: tpm
+            }))
+          },
+
+          {
+            name: 'color',
+            label: 'Color',
+            type: 'select',
+            placeholder: 'Select Color',
+            onChange: handleColorChange,
+            options: [
+              ...new Set(
+                totalEntries
+                  .filter(e => {
+                    const yarn = (yarnForm.yarn_type).trim()
+                    const tpm = String(yarnForm.tpm).trim()
+
+                    return (
+                      e.yarn_type?.trim() === yarn &&
+                      String(e.tpm).trim() === tpm
                     )
-                  ].map(color => ({
-                    value: color,
-                    label: color
-                  }))
-                },
-                {
-                  name: 'total_cones',
-                  label: 'Total Weight',
-                  type: 'text',
-                  // value: selectedYarnWeight,
-                  placeholder: '0.00 KG',
-                  readOnly: true,
-                  disabled: true
-                }
-              ]}
-              initialData={yarnForm}
-              onSubmit={() => setIsYarnModalOpen(false)}
-              onClose={() => setIsYarnModalOpen(false)}
-            />
-      
+                  })
+                  .map(e => e.color)
+              )
+            ].map(color => ({
+              value: color,
+              label: color
+            }))
+          },
+          {
+            name: 'total_cones',
+            label: 'Total Weight',
+            type: 'text',
+            // value: selectedYarnWeight,
+            placeholder: '0.00 KG',
+            readOnly: true,
+            disabled: true
+          }
+        ]}
+        initialData={yarnForm}
+        onSubmit={() => setIsYarnModalOpen(false)}
+        onClose={() => setIsYarnModalOpen(false)}
+      />
+
 
       <FormModal
         isOpen={isModalOpen}
         title={editingEntry ? 'Edit Packing Entry' : 'Add New Packing Entry'}
         fields={[
+          {
+            name: 'machine_id',
+            label: 'Machine ID',
+            type: 'select',
+            placeholder: 'Select Machine',
+            required: true,
+            options: machines.map((m) => ({
+              value: m.id,
+              label: `${m.machine_number}`,
+            })),
+          },
+
           {
             name: 'yarn_type',
             label: 'Type',
@@ -381,12 +435,20 @@ const handleColorChange = (value: string) => {
             value: selectedTpm || editingEntry?.tpm || "",
             placeholder: 'Select TPM',
             onChange: handleTpmChange,
-            options: totalEntries
-              .filter(e => !selectedYarn || e.yarn_type === selectedYarn)
-              .map(e => ({
-                value: e.tpm,
-                label: e.tpm
-              }))
+            options: [
+              ...new Set(
+                totalEntries
+                  .filter(e =>
+                    (selectedYarn || editingEntry?.yarn_type)
+                      ? e.yarn_type === (selectedYarn || editingEntry?.yarn_type)
+                      : true
+                  )
+                  .map(e => e.tpm)
+              )
+            ].map(tpm => ({
+              value: tpm,
+              label: tpm
+            }))
           },
           {
             name: 'color',
@@ -395,7 +457,21 @@ const handleColorChange = (value: string) => {
             value: selectedColor || editingEntry?.color || "",
             placeholder: 'Select Color',
             onChange: handleColorChange,
-            options: [...new Set(totalEntries.map(e => e.color))].map(color => ({
+            options: [
+              ...new Set(
+                totalEntries
+                  .filter(e => {
+                    const yarn = (selectedYarn || editingEntry?.yarn_type || "").trim()
+                    const tpm = String(selectedTpm || editingEntry?.tpm || "").trim()
+
+                    return (
+                      e.yarn_type?.trim() === yarn &&
+                      String(e.tpm).trim() === tpm
+                    )
+                  })
+                  .map(e => e.color)
+              )
+            ].map(color => ({
               value: color,
               label: color
             }))
@@ -413,7 +489,7 @@ const handleColorChange = (value: string) => {
             ]
           },
           { name: 'box', label: 'Box', type: 'text', placeholder: 'e.g., Box-01', required: true },
-          { name: 'machine_id', label: 'Machine ID', type: 'text', placeholder: 'e.g., M-01', required: true },
+
           { name: 'extra_pis', label: 'Extra Pise', type: 'text', placeholder: 'e.g., 10', required: false },
         ]}
         initialData={editingEntry || undefined}
