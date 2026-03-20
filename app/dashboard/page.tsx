@@ -188,11 +188,10 @@ export default function DashboardPage() {
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Low Stock Alert</p>
               <p className="text-3xl font-bold text-foreground">
-                <p className="text-3xl font-bold text-foreground">
                   {(dashboardData?.low_stock_alert?.length ?? 0) === 0
                     ? "0"
                     : dashboardData?.low_stock_alert?.[0]?.yarn_type ?? "0"}
-                </p>              </p>              <p className="text-xs text-muted-foreground mt-2">Yarn Types</p>
+                            </p>              <p className="text-xs text-muted-foreground mt-2">Yarn Types</p>
             </div>
             <div className="p-3 bg-primary/10 rounded-lg">
               <Zap className="w-6 h-6 text-primary" />
