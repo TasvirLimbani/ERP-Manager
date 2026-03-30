@@ -9,6 +9,7 @@ export interface YarnEntry {
   created_at: string
   weight: string
   yarn_type: string
+  yarn_sub_type: string
 }
 
 export interface YarnTotalEntry {

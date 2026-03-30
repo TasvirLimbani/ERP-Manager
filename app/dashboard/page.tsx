@@ -32,6 +32,35 @@ export interface YarnType {
   waste: string
 }
 
+export interface TPMRunning {
+  yarn_type: string
+  tpm: string
+  weight: string
+  machine_no: string
+}
+
+export interface dyeingrunning {
+  yarn_type: string
+  color: string
+  total_weight: string
+  total_tpm: string
+}
+
+export interface coningrunning {
+  yarn_type: string
+  color: string
+  total_weight: string
+  total_cones: string
+}
+
+export interface packingrunning {
+  yarn_type: string
+  color: string
+  total_box: string
+  total_cones: string
+}
+
+
 export interface WeightLoss {
   total_weight_loss: string
 }
@@ -48,6 +77,13 @@ export interface DashboardData {
   low_stock_alert: YarnType[]
   weight_loss: WeightLoss
   production_chart_7_days: ProductionChart[]
+
+
+  tpm_running: TPMRunning[]
+  dyeing_running: dyeingrunning[]
+  coning_running: coningrunning[]
+  packing_running: packingrunning[]
+
 }
 
 export interface DashboardResponse {
@@ -76,16 +112,20 @@ export default function DashboardPage() {
       .then(res => res.json())
       .then(data => {
         if (data.status) {
-          setDashboardData(data.data)
+          setDashboardData({
+            ...data.data,
+            coning_running: data.data.coning,
+            packing_running: data.data.packing // 👈 ADD THIS LINE
+          })
+
           const chartData = data.data.production_chart_7_days.map((item: ProductionChart) => ({
             name: item.date,
             production: parseInt(item.total_output),
-            target: 1000, // Example target value, replace with actual target if available
+            target: 1000,
           }))
+
           setChartData(chartData)
           setLoading(false)
-        } else {
-          console.error('Failed to fetch dashboard stats:', data.message)
         }
       })
       .catch(error => {
@@ -188,10 +228,10 @@ export default function DashboardPage() {
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Low Stock Alert</p>
               <p className="text-3xl font-bold text-foreground">
-                  {(dashboardData?.low_stock_alert?.length ?? 0) === 0
-                    ? "0"
-                    : dashboardData?.low_stock_alert?.[0]?.yarn_type ?? "0"}
-                            </p>              <p className="text-xs text-muted-foreground mt-2">Yarn Types</p>
+                {(dashboardData?.low_stock_alert?.length ?? 0) === 0
+                  ? "0"
+                  : dashboardData?.low_stock_alert?.[0]?.yarn_type ?? "0"}
+              </p>              <p className="text-xs text-muted-foreground mt-2">Yarn Types</p>
             </div>
             <div className="p-3 bg-primary/10 rounded-lg">
               <Zap className="w-6 h-6 text-primary" />
@@ -216,6 +256,153 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+
+        <Card className="p-6 border border-border/50 bg-card/50 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            TPM Running Status
+          </h3>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-left">Yarn Type</TableHead>
+                <TableHead className="text-left">TPM (kg)</TableHead>
+                <TableHead className="text-left">Weight (kg)</TableHead>
+                <TableHead className="text-left">Machine No</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {dashboardData?.tpm_running?.length ? (
+                dashboardData.tpm_running.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.yarn_type}</TableCell>
+                    <TableCell>{Number(item.tpm).toFixed(0)} kg</TableCell>
+                    <TableCell>{Number(item.weight).toFixed(0)} kg</TableCell>
+                    <TableCell>{item.machine_no || '-'}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    No TPM Data
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+
+        <Card className="p-6 border border-border/50 bg-card/50 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            Dyeing Running Status
+          </h3>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-left">Yarn Type</TableHead>
+                <TableHead className="text-left">Color</TableHead>
+                <TableHead className="text-left">Total Weight (kg)</TableHead>
+                <TableHead className="text-left">Total TPM (kg)</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {(dashboardData?.dyeing_running?.length ?? 0) > 0 ? (
+                dashboardData!.dyeing_running!.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.yarn_type}</TableCell>
+                    <TableCell>{item.color}</TableCell>
+                    <TableCell>{Number(item.total_weight).toFixed(0)} kg</TableCell>
+                    <TableCell>{Number(item.total_tpm).toFixed(0)} kg</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    No Dyeing Data
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+
+
+        <Card className="p-6 border border-border/50 bg-card/50 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            Coning Running Status
+          </h3>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-left">Yarn Type</TableHead>
+                <TableHead className="text-left">Color</TableHead>
+                <TableHead className="text-left">Total Weight (kg)</TableHead>
+                <TableHead className="text-left">Total Cones</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {(dashboardData?.coning_running?.length ?? 0) > 0 ? (
+                dashboardData!.coning_running!.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.yarn_type}</TableCell>
+                    <TableCell>{item.color}</TableCell>
+                    <TableCell>{Number(item.total_weight).toFixed(0)} kg</TableCell>
+                    <TableCell>{Number(item.total_cones).toFixed(0)}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    No Coning Data
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+        <Card className="p-6 border border-border/50 bg-card/50 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4">
+            Packing Running Status
+          </h3>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-left">Yarn Type</TableHead>
+                <TableHead className="text-left">Color</TableHead>
+                <TableHead className="text-left">Total Box (kg)</TableHead>
+                <TableHead className="text-left">Total Cones (kg)</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {(dashboardData?.packing_running?.length ?? 0) > 0 ? (
+                dashboardData!.packing_running!.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.yarn_type}</TableCell>
+                    <TableCell>{item.color}</TableCell>
+                    <TableCell>{Number(item.total_box).toFixed(0)} kg</TableCell>
+                    <TableCell>{Number(item.total_cones).toFixed(0)} kg</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center text-muted-foreground">
+                    No Packing Data
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      </div>
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Production Trend */}
@@ -229,7 +416,7 @@ export default function DashboardPage() {
                   <stop offset="95%" stopColor="hsl(var(--color-primary))" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+              <CartesianGrid strokeDasharray= "3 3" stroke="var(--color-border)" />
               <XAxis dataKey="name" stroke="var(--color-muted-foreground)" />
               <YAxis stroke="var(--color-muted-foreground)" />
               <Tooltip
