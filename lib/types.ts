@@ -39,6 +39,8 @@ export interface DyeingEntry  {
   id: string
   machine_id: string
   yarn_type: string
+  yarn_sub_type: string
+   category?: string 
   company_id: string
   admin_id: string
   color: string
