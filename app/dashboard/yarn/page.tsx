@@ -448,7 +448,7 @@ export default function YarnPage() {
   const [totalEntries, setTotalEntries] = useState<YarnTotalEntry[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState<YarnEntry | null>(null)
-   const [isYarnModalOpen, setIsYarnModalOpen] = useState(false)
+  const [isYarnModalOpen, setIsYarnModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [yarnForm, setYarnForm] = useState({
     yarn_type: '',
@@ -474,6 +474,24 @@ export default function YarnPage() {
       const totalJson = await totalRes.json()
 
       if (json.status) {
+        const formatted = json.data
+          .filter((item: any) => {
+            // Only include items with positive weight
+            const weight = parseFloat(item.weight);
+            return !isNaN(weight) && weight > 0;
+          })
+          .map((item: any) => ({
+            id: item.id,
+            batchId: item.batch_id,
+            supplierName: item.supplier_name,
+            date: item.created_at?.split(' ')[0],
+            quantity: parseFloat(item.weight),
+            type: item.yarn_type,
+            subType: item.yarn_sub_type
+          }));
+
+        setEntries(formatted);
+      } else {
         setEntries(
           json.data.map((item: any) => ({
             id: item.id,
@@ -497,7 +515,7 @@ export default function YarnPage() {
     }
   }
 
-    const getSubTypes = (type: string) =>
+  const getSubTypes = (type: string) =>
     totalEntries
       .filter(y => y.yarn_type === type)
       .map(y => y.yarn_sub_type)
@@ -543,7 +561,7 @@ export default function YarnPage() {
   }
 
 
-    const handleSubType = (sub: string) => {
+  const handleSubType = (sub: string) => {
     const yarn = totalEntries.find(
       y => y.yarn_type === yarnForm.yarn_type && y.yarn_sub_type === sub
     )
@@ -555,7 +573,7 @@ export default function YarnPage() {
     })
   }
 
-    const handleYarnChange = (type: string) => {
+  const handleYarnChange = (type: string) => {
     setYarnForm({
       yarn_type: type,
       yarn_sub_type: '',
@@ -591,7 +609,7 @@ export default function YarnPage() {
     }
   }
 
-    const subTypeOptions = useMemo(() => {
+  const subTypeOptions = useMemo(() => {
     return getSubTypes(yarnForm.yarn_type).map(s => ({
       value: s,
       label: s,
