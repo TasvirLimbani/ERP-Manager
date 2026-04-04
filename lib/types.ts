@@ -57,6 +57,7 @@ export interface ConningEntry {
   machine_id: string
   tpm: any
   yarn_type: string
+  category: string
   color: string
   date: string
   weight: any
@@ -72,6 +73,7 @@ export interface PackingEntry {
   tpm: any
   cones: string
   color: any
+  category: string
   cone_size: string
   box: any
   company_id: string
@@ -92,20 +94,42 @@ export interface SellingEntry {
   total_cones: string
   created_at: string
 }
+// export interface StockEntry {
+//   id: string
+//   tpm: string
+//   yarn_type: string
+//  color: string
+//  dyeing_weight: string
+//  coning_weight: string
+//  remaining_weight: string
+//  total_cones: string
+//  packed_cones: string
+//  remaining_cones: string
+//  total_box: string
+//  total_extra_pis: string
+// }
+
+export interface ConeUnpacked {
+  cone_size: number
+  cones: number
+}
+
+export interface ConePacked {
+  cone_size: number
+  box: number
+  extra: number
+}
+
 export interface StockEntry {
   id: string
-  tpm: string
   yarn_type: string
- color: string
- dyeing_weight: string
- coning_weight: string
- remaining_weight: string
- total_cones: string
- packed_cones: string
- remaining_cones: string
- total_box: string
- total_extra_pis: string
+  tpm: string
+  color: string
+  category?: string
+  unpacked_cones: any[]
+  packed_cones_size: any[]
 }
+
 
 export type DataEntry = 
   | YarnEntry 

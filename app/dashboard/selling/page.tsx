@@ -13,9 +13,10 @@ export interface packingTotalEntry {
     yarn_type: string
     color: string
     cone_size: string
-    total_cones: string
+    category: string
     total_boxes: string
-    total_extra_pis: string
+    cones: string
+    boxes: string
 }
 
 export default function PackingPage() {
@@ -25,9 +26,20 @@ export default function PackingPage() {
     const [selectedYarn, setSelectedYarn] = useState<string>("")
     const [formData, setFormData] = useState<any>({})
     const [selectedTpm, setSelectedTpm] = useState<string>("")
+    const [editingEntry, setEditingEntry] = useState<SellingEntry | null>(null)
     const [selectedColor, setSelectedColor] = useState("")
     const [loading, setLoading] = useState(false)
     const { user } = useAuth()
+    const [yarnForm, setYarnForm] = useState({
+        yarn_type: '',
+        category: '',
+        tpm: '',
+        color: '',
+        cone_size: '',
+        cones: '',
+        total_cones: ''
+    })
+
 
     useEffect(() => {
         loadEntries()
@@ -45,8 +57,11 @@ export default function PackingPage() {
                 const formatted = totalJson.data.map((item: packingTotalEntry) => ({
                     tpm: item.tpm,
                     color: item.color,
+                    total_boxes: item.total_boxes,
+                    cones: item.cones,
                     yarn_type: item.yarn_type,
-                    total_cones: item.total_cones,
+                    category: item.category,
+                    cone_size: item.cone_size
                 }))
 
                 setTotalEntries(formatted)
@@ -57,6 +72,7 @@ export default function PackingPage() {
                     id: item.id,
                     yarn_type: item.yarn_type,
                     tpm: Number(item.tpm),
+                    category: item.category,
                     color: item.color,
                     cone_size: Number(item.cone_size),
                     box: Number(item.box),
@@ -78,6 +94,7 @@ export default function PackingPage() {
 
     };
 
+
     const handleAddNew = () => {
         setSelectedYarn("")
         setSelectedTpm("")
@@ -85,7 +102,9 @@ export default function PackingPage() {
         setFormData({
             yarn_type: "",
             tpm: "",
+            category: "",
             color: "",
+            cones: "",
             cone_size: "",
             box: "",
             extra_cones: "",
@@ -95,21 +114,26 @@ export default function PackingPage() {
     }
 
 
-
-
     const handleSubmit = async (data: Record<string, any>) => {
+
         try {
             const coneSize = Number(data.cone_size)
             const box = Number(data.box)
             const extra = Number(data.extra_cones || 0)
 
-            const total_cones = (box * coneSize) + extra
+            const total_cones = (box * 12) + extra
 
             const payload = {
-                company_id: String(user?.company_id || ""),
-
-                yarn_type: data.yarn_type, tpm: Number(data.tpm), color: data.color, cone_size: coneSize, cones: data.cones, box: box
-
+                company_id: Number(user?.company_id || ""),
+                yarn_type: data.yarn_type,
+                tpm: selectedTpm || data.tpm,
+                category: data.category,
+                color: data.color,
+                cones: Number(data.cones),
+                cone_size: coneSize,
+                box: box,
+                extra_cones: extra,
+                total_cones: total_cones
             }
 
             const res = await fetch("/api/selling", {
@@ -136,10 +160,20 @@ export default function PackingPage() {
     }
     const handleYarnChange = (value: string) => {
         setSelectedYarn(value)
-        setSelectedTpm("")
 
+        setYarnForm(prev => ({
+            ...prev,
+            yarn_type: value,
+            category: "",   // ✅ RESET
+            tpm: "",
+            color: "",
+            cone_size: "",
+            cones: "",
+            box: ""
+        }))
+
+        setSelectedColor("")
     }
-
     const handleTpmChange = (value: string) => {
         setSelectedTpm(value)
 
@@ -156,7 +190,7 @@ export default function PackingPage() {
     const columns = [
         { key: 'created_at', label: 'Date' },
         { key: 'yarn_type', label: 'Yarn Type' },
-        { key: 'tpm', label: 'TPM' },
+        { key: 'category', label: 'Category' },
         { key: 'color', label: 'Color' },
         { key: 'cone_size', label: 'Cone Size' },
         { key: 'box', label: 'Box' },
@@ -187,7 +221,7 @@ export default function PackingPage() {
                     {
                         name: 'yarn_type',
                         label: 'Type',
-                        value: selectedYarn || "",
+                        // value: selectedYarn || editingEntry?.yarn_type || "",
                         type: 'select',
                         placeholder: 'Select yarn type',
                         onChange: handleYarnChange,
@@ -197,44 +231,98 @@ export default function PackingPage() {
                         }))
                     },
                     {
-                        name: 'tpm',
-                        label: 'TPM',
+                        name: 'category',
+                        label: 'Category',
                         type: 'select',
-                        value: selectedTpm || "",
-                        placeholder: 'Select TPM',
-                        onChange: handleTpmChange,
-                        options: totalEntries
-                            .filter(e => !selectedYarn || e.yarn_type === selectedYarn)
-                            .map(e => ({
-                                value: e.tpm,
-                                label: e.tpm
+                        placeholder: 'Select Category',
+
+                        onChange: (value: string) => {
+                            setYarnForm(prev => ({
+                                ...prev,
+                                category: value,
+                                color: "",// reset color only
+                                cone_size: ""
                             }))
+
+                            setSelectedColor("")
+                        },
+                        options: [
+                            ...new Set(
+                                totalEntries
+                                    .filter(e =>
+                                        e.yarn_type === yarnForm.yarn_type
+                                    )
+                                    .map(e => e.category)
+                                    .filter(Boolean)
+                            )
+                        ].map(cat => ({
+                            value: cat,
+                            label: cat
+                        }))
                     },
                     {
                         name: 'color',
                         label: 'Color',
                         type: 'select',
-                        value: selectedColor || "",
+
                         placeholder: 'Select Color',
-                        onChange: handleColorChange,
-                        options: [...new Set(totalEntries.map(e => e.color))].map(color => ({
+                        onChange: (value: string) => {
+                            setSelectedColor(value)
+
+                            setYarnForm(prev => ({
+                                ...prev,
+                                color: value,
+                                cone_size: ""   // ✅ ADD THIS
+                            }))
+
+                            const yarn = totalEntries.find(
+                                (y) =>
+                                    y.yarn_type === (yarnForm.yarn_type || selectedYarn) &&
+                                    y.category === yarnForm.category &&
+                                    y.color === value
+                            )
+
+                            if (yarn) {
+                                setSelectedTpm(yarn.tpm)
+                            }
+                        },
+                        options: [
+                            ...new Set(
+                                totalEntries
+                                    .filter(e =>
+                                        e.yarn_type === selectedYarn &&
+                                        e.category === yarnForm.category
+                                    )
+                                    .map(e => e.color)
+                            )
+                        ].map(color => ({
                             value: color,
                             label: color
                         }))
                     },
-
                     {
                         name: 'cone_size',
                         label: 'Cone Size',
                         type: 'select',
                         placeholder: 'Select Cone Size',
                         required: true,
-                        options: [
-                            { value: '1500', label: '1500' },
-                            { value: '3000', label: '3000' }
-                        ]
-                    },
 
+                        options: [
+                            ...new Set(
+                                totalEntries
+                                    .filter(e =>
+                                        e.yarn_type === selectedYarn &&
+                                        e.category === yarnForm.category &&
+                                        e.color === selectedColor
+                                    )
+                                    .map(e => e.cone_size)
+                                    .filter(Boolean)
+                            )
+                        ].map(size => ({
+                            value: String(size),
+                            label: String(size)
+                        }))
+                    },
                     { name: 'box', label: 'Box', type: 'number', placeholder: 'e.g., Box-01', required: true },
                     { name: 'cones', label: 'Extra Cones', type: 'number', placeholder: '0', required: true },
                 ]}
