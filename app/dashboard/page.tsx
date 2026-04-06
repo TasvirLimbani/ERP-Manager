@@ -51,6 +51,7 @@ export interface dyeingrunning {
 
 export interface coningrunning {
   yarn_type: string
+  yarn_sub_type: string
   color: string
   total_weight: string
   total_cones: string
@@ -66,6 +67,8 @@ export interface packingrunning {
 
 export interface WeightLoss {
   total_weight_loss: string
+  total_dyeing_waste: string
+  total_tpm_waste: string
 }
 
 export interface ProductionChart {
@@ -251,6 +254,16 @@ export default function DashboardPage() {
 
                 {safeNumber(dashboardData?.weight_loss?.total_weight_loss)}
               </p>              <p className="text-xs text-muted-foreground mt-2">kg this month</p>
+              <h2 className="text-sm font-bold  text-foreground">
+                TPM Loss =
+
+                {safeNumber(dashboardData?.weight_loss?.total_tpm_waste)}
+              </h2>
+              <p className="text-sm font-bold text-foreground">
+                Dyeing Loss =
+
+                {safeNumber(dashboardData?.weight_loss?.total_dyeing_waste)}
+              </p>
             </div>
             <div className="p-3 bg-accent/10 rounded-lg">
               <CheckCircle className="w-6 h-6 text-accent" />
@@ -310,7 +323,7 @@ export default function DashboardPage() {
                 <TableHead className="text-left">Yarn Type</TableHead>
                 <TableHead className="text-left">Sub Yarn</TableHead>
                 <TableHead className="text-left">Color</TableHead>
-                                <TableHead className="text-left">TPM</TableHead>
+                <TableHead className="text-left">TPM</TableHead>
                 <TableHead className="text-left">Total Weight (kg)</TableHead>
               </TableRow>
             </TableHeader>
@@ -322,9 +335,9 @@ export default function DashboardPage() {
                     <TableCell>{item.yarn_type}</TableCell>
                     <TableCell>{item.yarn_sub_type || '-'}</TableCell>
                     <TableCell>{item.color}</TableCell>
-                        <TableCell>{Number(item.total_tpm).toFixed(0)}</TableCell>
+                    <TableCell>{Number(item.total_tpm).toFixed(0)}</TableCell>
                     <TableCell>{Number(item.total_weight).toFixed(0)} kg</TableCell>
-                
+
                   </TableRow>
                 ))
               ) : (
@@ -348,9 +361,10 @@ export default function DashboardPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="text-left">Yarn Type</TableHead>
+                <TableHead className="text-left">Sub Yarn</TableHead>
                 <TableHead className="text-left">Color</TableHead>
                 <TableHead className="text-left">Total Weight (kg)</TableHead>
-                <TableHead className="text-left">Total Cones</TableHead>
+
               </TableRow>
             </TableHeader>
 
@@ -359,9 +373,10 @@ export default function DashboardPage() {
                 dashboardData!.coning_running!.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>{item.yarn_type}</TableCell>
+                    <TableCell>{item.yarn_sub_type || '-'}</TableCell>
                     <TableCell>{item.color}</TableCell>
                     <TableCell>{Number(item.total_weight).toFixed(0)} kg</TableCell>
-                    <TableCell>{Number(item.total_cones).toFixed(0)}</TableCell>
+
                   </TableRow>
                 ))
               ) : (
@@ -384,8 +399,8 @@ export default function DashboardPage() {
               <TableRow>
                 <TableHead className="text-left">Yarn Type</TableHead>
                 <TableHead className="text-left">Color</TableHead>
-                <TableHead className="text-left">Total Box (kg)</TableHead>
-                <TableHead className="text-left">Total Cones (kg)</TableHead>
+                <TableHead className="text-left">Total Box</TableHead>
+                {/* <TableHead className="text-left">Total Cones (kg)</TableHead> */}
               </TableRow>
             </TableHeader>
 
@@ -395,8 +410,8 @@ export default function DashboardPage() {
                   <TableRow key={index}>
                     <TableCell>{item.yarn_type}</TableCell>
                     <TableCell>{item.color}</TableCell>
-                    <TableCell>{Number(item.total_box).toFixed(0)} kg</TableCell>
-                    <TableCell>{Number(item.total_cones).toFixed(0)} kg</TableCell>
+                    <TableCell>{Number(item.total_box).toFixed(0)} </TableCell>
+                    {/* <TableCell>{Number(item.total_cones).toFixed(0)} kg</TableCell> */}
                   </TableRow>
                 ))
               ) : (
@@ -414,30 +429,6 @@ export default function DashboardPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Production Trend */}
-        <Card className="p-6 border border-border/50 bg-card/50 backdrop-blur-sm">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Production Trend</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={CHART_DATA}>
-              <defs>
-                <linearGradient id="colorProduction" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--color-primary))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--color-primary))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray= "3 3" stroke="var(--color-border)" />
-              <XAxis dataKey="name" stroke="var(--color-muted-foreground)" />
-              <YAxis stroke="var(--color-muted-foreground)" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'var(--color-card)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '0.75rem'
-                }}
-              />
-              <Area type="monotone" dataKey="production" stroke="var(--color-primary)" fillOpacity={1} fill="url(#colorProduction)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Card>
 
         {/* Production vs Target */}
         <Card className="p-6 border border-border/50 bg-card/50 backdrop-blur-sm">
@@ -475,6 +466,34 @@ export default function DashboardPage() {
             </TableBody>
           </Table>
         </Card>
+
+        <Card className="p-6 border border-border/50 bg-card/50 backdrop-blur-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4">Production Trend</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={CHART_DATA}>
+              <defs>
+                <linearGradient id="colorProduction" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--color-primary))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--color-primary))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+              <XAxis dataKey="name" stroke="var(--color-muted-foreground)" />
+              <YAxis stroke="var(--color-muted-foreground)" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--color-card)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '0.75rem'
+                }}
+              />
+              <Area type="monotone" dataKey="production" stroke="var(--color-primary)" fillOpacity={1} fill="url(#colorProduction)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+
+
+
       </div>
     </div>
   )

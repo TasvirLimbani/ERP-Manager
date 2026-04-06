@@ -54,13 +54,13 @@ export default function TPMPage() {
   })
 
   const openYarnModal = () => {
-  setYarnForm({
-    yarn_type: '',
-    yarn_sub_type: '',
-    total_weight: '',
-  })
-  setIsYarnModalOpen(true)
-}
+    setYarnForm({
+      yarn_type: '',
+      yarn_sub_type: '',
+      total_weight: '',
+    })
+    setIsYarnModalOpen(true)
+  }
 
   // ------------------ LOAD DATA ------------------
   useEffect(() => {
@@ -85,6 +85,7 @@ export default function TPMPage() {
       setEntries(
         tpmJson.data.map((i: any) => ({
           ...i,
+          output_weight: i.output_weight === "0.00" ? 'Running' : i.output_weight,
           created_at: i.created_at.split(' ')[0],
         }))
       )
@@ -268,8 +269,8 @@ export default function TPMPage() {
             Track machine performance
           </p>
         </div>
-<Button onClick={openYarnModal}>
-        {/* <Button onClick={() => setIsYarnModalOpen(true)}> */}
+        <Button onClick={openYarnModal}>
+          {/* <Button onClick={() => setIsYarnModalOpen(true)}> */}
           <Weight size={16} /> Status Check
         </Button>
       </div>
@@ -320,7 +321,7 @@ export default function TPMPage() {
         isOpen={isModalOpen}
         title={editingEntry ? 'Edit Entry' : 'Add Entry'}
         fields={[
-          { name: 'batch_id', label: 'Batch', type: 'text', disabled: true , readOnly: true},
+          { name: 'batch_id', label: 'Batch', type: 'text', disabled: true, readOnly: true },
           {
             name: 'machine_no',
             label: 'Machine',

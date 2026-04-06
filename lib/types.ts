@@ -60,6 +60,7 @@ export interface ConningEntry {
   category: string
   color: string
   date: string
+  average: string
   weight: any
   cones: any
   cones_size: string

@@ -124,7 +124,7 @@ export default function StockPage() {
 
     {
       key: 'packed',
-      label: 'Packed Box/Extra',
+      label: 'Packed Box',
       render: (_: any, row: any) => {
         let packed = row?.packed_cones_size
 
@@ -150,7 +150,7 @@ export default function StockPage() {
               <div key={i} className="text-sm">
                 <span className="font-medium">{c.cone_size}</span>
                 <span className="mx-1">→</span>
-                <span>{c.box} box + {c.extra}</span>
+                <span>{c.box} box </span>
               </div>
             ))}
           </div>
@@ -186,7 +186,7 @@ export default function StockPage() {
           { name: 'packed_cones', label: 'Packed Cones', type: 'number' },
           { name: 'remaining_cones', label: 'Remaining Cones', type: 'number' },
           { name: 'total_boxes', label: 'Total Boxes', type: 'number' },
-          { name: 'total_extra_pis', label: 'Extra PIs', type: 'number' },
+         
         ]}
         initialData={editingEntry || undefined}
         onSubmit={handleSubmit}

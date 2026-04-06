@@ -27,7 +27,7 @@ const NAVIGATION = [
   { name: 'Conning', href: '/dashboard/conning', icon: Wind },
   { name: 'Packing', href: '/dashboard/packing', icon: Package },
   { name: 'Stock', href: '/dashboard/stock', icon: Boxes },
-  { name: 'Selling', href: '/dashboard/selling', icon: IndianRupee },
+  // { name: 'Selling', href: '/dashboard/selling', icon: IndianRupee },
 ]
 
 export function Sidebar() {

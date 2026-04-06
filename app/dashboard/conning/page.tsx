@@ -31,9 +31,14 @@ export default function ConningPage() {
   const [editingEntry, setEditingEntry] = useState<ConningEntry | null>(null)
   const [selectedYarnWeight, setSelectedYarnWeight] = useState<string>("")
   const [selectedMachine, setSelectedMachine] = useState<string>("")
+  const [liveAverage, setLiveAverage] = useState("0.00")
   const { user } = useAuth()
   const [isYarnModalOpen, setIsYarnModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    weight: 0,
+    cones: 0
+  })
   const [yarnForm, setYarnForm] = useState({
     yarn_type: '',
     tpm: '',
@@ -97,6 +102,7 @@ export default function ConningPage() {
           coning_total_weight: item.coning_total_weight,
           remaining_weight: item.remaining_weight,
           created_at: item.created_at?.split(" ")[0],
+          average: Number(item.weight) > 0 ? (Number(item.weight) / Number(item.cones || 1)).toFixed(2) : "0.00",
         }))
         setEntries(formatted)
 
@@ -149,6 +155,7 @@ export default function ConningPage() {
       machine_id: "",
       yarn_type: "",
       category: "",
+      average: "",
       tpm: "",
       color: "",
       weight: "",
@@ -206,6 +213,8 @@ export default function ConningPage() {
   }
 
   const handleSubmit = async (data: Record<string, any>) => {
+
+
     try {
       const formData: ConningEntry = {
         id: editingEntry ? editingEntry.id : "",
@@ -219,6 +228,8 @@ export default function ConningPage() {
         cones_size: data.cones_size || '', // Placeholder, replace with actual cone size if needed
         cones: Number(data.cones) || 0, // Placeholder, replace with actual cone count if needed
         date: data.date || new Date().toISOString().split('T')[0],
+        average: liveAverage,
+       
       }
 
       const res = await fetch("/api/conning", {
@@ -246,7 +257,7 @@ export default function ConningPage() {
   }
 
 
-    const handleMachineChange = (value: string) => {
+  const handleMachineChange = (value: string) => {
     setSelectedMachine(value)
   }
   const handleYarnChange = (value: string) => {
@@ -332,6 +343,7 @@ export default function ConningPage() {
       label: 'Weight (kg)',
       render: (value: string) => parseFloat(value).toFixed(2),
     },
+    { key: 'average', label: 'Average(%)' },
   ]
 
   return (
@@ -451,12 +463,12 @@ export default function ConningPage() {
         fields={[
 
 
-         {
+          {
             name: 'machine_id',
             label: 'Machine ID',
             type: 'select',
             placeholder: 'Select Machine',
-          
+
             required: true,
             onChange: handleMachineChange,
             options: machines.map((m) => ({
@@ -518,29 +530,6 @@ export default function ConningPage() {
               label: cat
             }))
           },
-          // {
-          //   name: 'tpm',
-          //   label: 'TPM',
-          //   type: 'select',
-          //   value: selectedTpm || editingEntry?.tpm || "",
-          //   placeholder: 'Select TPM',
-          //   onChange: handleTpmChange,
-          //   options: [
-          //     ...new Set(
-          //       totalEntries
-          //         .filter(e =>
-          //           (selectedYarn || editingEntry?.yarn_type)
-          //             ? e.yarn_type === (selectedYarn || editingEntry?.yarn_type)
-          //             : true
-          //         )
-          //         .map(e => e.tpm)
-          //     )
-          //   ].map(tpm => ({
-          //     value: tpm,
-          //     label: tpm
-          //   }))
-          // },
-
           {
             name: 'color',
             label: 'Color',
@@ -582,16 +571,24 @@ export default function ConningPage() {
           {
             name: 'cones_size',
             label: 'Cone Size',
-            type: 'select',
-            placeholder: 'Select Cone Size',
+            type: 'text',
+            placeholder: 'Enter Cone Size',
             required: true,
-            options: [
-              { value: '1500', label: '1500' },
-              { value: '3000', label: '3000' }
-            ]
           },
-          { name: 'weight', label: 'Total Weight (kg)', type: 'number', placeholder: '0.00', required: true },
-          { name: 'cones', label: 'Number of Cones', type: 'number', placeholder: '0', required: true },
+          {
+            name: 'weight',
+            label: 'Total Weight (kg)',
+            type: 'number',
+            placeholder: '0.00',
+            required: true,
+          },
+          {
+            name: 'cones',
+            label: 'Number of Cones',
+            type: 'number',
+            placeholder: '0',
+            required: true,
+          },
 
         ]}
         initialData={editingEntry || undefined}

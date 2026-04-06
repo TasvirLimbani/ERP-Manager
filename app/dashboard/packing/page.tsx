@@ -202,63 +202,79 @@ export default function PackingPage() {
 
 
   const handleSubmit = async (data: Record<string, any>) => {
+
+    const boxValue = Number(data.box || 0);
+
+    if (boxValue <= 0) {
+      toast.error("Please enter box");
+      return;
+    }
+
+    const inputCones = boxValue * 12;
+
     const yarn = totalEntries.find(
       (y) =>
         y.yarn_type === (yarnForm.yarn_type || selectedYarn) &&
         y.category === yarnForm.category &&
-        y.color === selectedColor
-    )
-    console.log("Found matching yarn:::::::::: ", yarn) // Debug log
-    if (Number(yarn?.total_cones) >= Number(data.cones)) {
-      try {
-        const isEdit = !!editingEntry?.id
-        console.log("SUBMIT DATA::::::::::::", selectedMachine)
-        const payload = {
-          company_id: Number(user?.company_id),
-          machine_id: Number(selectedMachine),
-          tpm: Number(selectedTpm || data.tpm),
-          yarn_type: data.yarn_type || selectedYarn || "",
-          category: data.category || yarnForm.category || selectedColor || "",
-          color: selectedColor || data.color || '', // ✅ FIXED
-          cones: Number(data.cones) || 0,
-          cone_size: Number(data.cone_size),
-          box: Number(data.box) || 0,
-          extra_pis: Number(data.extra_pis) || 0,
-        }
-        const res = await fetch("/api/packing", {
-          method: "POST", // ✅ always POST
-          headers: {
-            "Content-Type": "application/json",
+        y.color === selectedColor &&
+        String(y.cone_size) === String(data.cone_size)
+    );
 
-          },
-          body: JSON.stringify({
-            ...payload,
+    console.log("FOUND YARN:", yarn);
 
-            ...(isEdit && { id: editingEntry.id }) // send id for update
-          }),
-        })
+    if (!yarn) {
+      toast.error("Stock not found for selected combination");
+      return;
+    }
 
-        const json = await res.json()
+    if (Number(yarn.total_cones) < inputCones) {
+      toast.error(`Only ${Math.floor(yarn.total_cones / 12)} box available`);
+      return;
+    }
 
-        if (json.status) {
-          toast.success(`Entry ${isEdit ? "updated" : "added"} successfully`)
-          setIsModalOpen(false)
-          loadEntries()
-          setEditingEntry(null)
-        } else {
-          toast.error(json.message || "Failed to save entry")
-        }
+    try {
+      const isEdit = !!editingEntry?.id;
 
-      } catch (error: any) {
-        toast.error(error.message || "Failed to save entry")
+      const payload = {
+        company_id: Number(user?.company_id),
+        machine_id: Number(selectedMachine),
+        tpm: Number(selectedTpm || data.tpm),
+        yarn_type: data.yarn_type || selectedYarn || "",
+        category: data.category || yarnForm.category || "",
+        color: selectedColor || data.color || "",
+        cone_size: Number(data.cone_size),
+
+        box: boxValue,
+
+        extra_pis: Number(data.extra_pis) || 0,
+      };
+
+      const res = await fetch("/api/packing", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...payload,
+          ...(isEdit && { id: editingEntry.id })
+        }),
+      });
+
+      const json = await res.json();
+
+      if (json.status) {
+        toast.success(`Entry ${isEdit ? "updated" : "added"} successfully`);
+        setIsModalOpen(false);
+        loadEntries();
+        setEditingEntry(null);
+      } else {
+        toast.error(json.message || "Failed to save entry");
       }
-    }
-    else {
-      toast.error("Not enough yarn cones available. Please check the total cones for the selected yarn.")
-    }
 
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save entry");
+    }
   }
-
 
   const handleMachineChange = (value: string) => {
     setSelectedMachine(value)
@@ -353,9 +369,8 @@ export default function PackingPage() {
     // { key: 'tpm', label: 'TPM' },
     { key: 'color', label: 'Color' },
     { key: 'cone_size', label: 'Cone Size' },
-    { key: 'cones', label: 'Cones' },
     { key: 'box', label: 'Box' },
-    { key: 'extra_pis', label: 'Extra Pise' },
+
   ]
 
   return (
@@ -654,10 +669,7 @@ export default function PackingPage() {
               label: String(size)
             }))
           },
-          { name: 'cones', label: 'Number of Cones', type: 'number', placeholder: '0', required: true },
-          { name: 'box', label: 'Box', type: 'text', placeholder: 'e.g., Box-01', required: true },
-
-          { name: 'extra_pis', label: 'Extra Pise', type: 'text', placeholder: 'e.g., 10', required: false },
+          { name: 'box', label: 'Box', type: 'number', placeholder: 'e.g., Box-01', required: true },
         ]}
         initialData={editingEntry || undefined}
         onSubmit={handleSubmit}

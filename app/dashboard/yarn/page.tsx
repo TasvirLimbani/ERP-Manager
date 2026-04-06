@@ -33,13 +33,13 @@ export default function YarnPage() {
   })
 
   const openYarnModal = () => {
-  setYarnForm({
-    yarn_type: '',
-    yarn_sub_type: '',
-    total_weight: '',
-  })
-  setIsYarnModalOpen(true)
-}
+    setYarnForm({
+      yarn_type: '',
+      yarn_sub_type: '',
+      total_weight: '',
+    })
+    setIsYarnModalOpen(true)
+  }
   const [formState, setFormState] = useState({
     type: '',
     subType: '',
@@ -352,13 +352,15 @@ export default function YarnPage() {
             name: 'subType',
             label: 'Sub Type',
             type: 'select',
-
             options: getSubTypes(formState.type).map((s) => ({
               value: s,
               label: s,
             })),
             onChange: (val: string) =>
-              setFormState({ type: val, subType: '' }),
+              setFormState((prev) => ({
+                ...prev,
+                subType: val,
+              })),
           },
           {
             name: 'quantity',
