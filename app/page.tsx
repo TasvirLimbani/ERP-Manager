@@ -59,7 +59,7 @@ export default function LoginPage() {
         <div className="p-8">
 
           <div className="space-y-2 mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Fair Method</h1>
+            <h1 className="text-3xl font-bold text-foreground">Radhe ERM Manager</h1>
             <p className="text-sm text-muted-foreground">
               Yarn Factory Management System
             </p>
